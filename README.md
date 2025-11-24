@@ -120,8 +120,9 @@ interface ProjectMembership {
 ## Part 2: 핵심 컴포넌트 구현
 
 선호하는 언어(TypeScript, Python, Go, Java 등)를 선택하여 다음을 구현하세요.
+아래 코드들은 어디까지나 예시이므로 자유롭게 설계해주세요.
 
-### 2.1 Expression DSL 및 Evaluator 구현
+### 2.1 Expression DSL 및 Evaluator 구현 (예시)
 
 ```typescript
 // 예시: TypeScript로 구현할 경우의 타입 정의
