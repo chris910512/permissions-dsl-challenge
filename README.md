@@ -148,7 +148,7 @@ function evaluateExpression(
 ): boolean | null {
   // TODO: 구현
   // - true/false: 확정적으로 평가 가능
-  // - null: 데이터 부족으로 평가 불가 (지연 로딩용)
+  // - null: 데이터 부족으로 평가 불가
 }
 ```
 
