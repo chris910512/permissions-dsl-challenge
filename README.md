@@ -1,8 +1,8 @@
 # 권한 DSL 시스템
 
 협업 기반 문서 관리 플랫폼을 위한 권한 Domain Specific Language (DSL) 시스템입니다.
-설계문서: [DESIGN.md](DESIGN.md)
-AI 코드 생성 기록: [AI_AGENT.md](AI_AGENT.md)
+- 설계문서: [DESIGN.md](DESIGN.md)
+- AI 코드 생성 기록: [AI_AGENT.md](AI_AGENT.md)
 
 ## 설치 및 실행 방법
 
@@ -52,7 +52,7 @@ git clone [repository-url]
 
 ### 현재 제약사항
 
-1. Expression 제한: 현재는 AND, OR, NOT, BINARY만 지원, 통계 함수(COUNT, SUM, AVG 등) 또는 서브쿼리 등 지원 고려 필요
+1. Expression 제한: 현재는 AND, OR, NOT, BINARY만 지원, 통계 함수(COUNT, SUM, AVG 등) 또는 서브쿼리 등 지원 고려
 2. DataLoader 단순화: Java 메모리 기반 구현, 실제 DB 연동 및 복잡한 쿼리 미구현
 
 ### 향후 개선 방향
