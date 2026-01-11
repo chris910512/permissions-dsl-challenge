@@ -1,405 +1,62 @@
-# 권한 DSL 시스템 설계 및 구현 과제
+# 권한 DSL 시스템
 
-## 배경
+협업 기반 문서 관리 플랫폼을 위한 권한 Domain Specific Language (DSL) 시스템입니다.
+설계문서: [DESIGN.md](DESIGN.md)
+AI 코드 생성 기록: [AI_AGENT.md](AI_AGENT.md)
 
-협업 기반의 문서 관리 플랫폼을 운영하고 있습니다. 사용자들은 프로젝트와 팀에 속해 있으며, 문서에 대한 다양한 권한(보기, 편집, 삭제 등)을 가질 수 있습니다. 최근 권한 시스템이 복잡해지면서 다음과 같은 문제들이 발생하고 있습니다:
-
-### 현재 문제점
-1. **복잡한 권한 로직**: 권한 확인 코드가 여러 곳에 산재되어 있고, 수정이 어려움
-2. **성능 문제**: 권한 확인을 위한 데이터베이스 쿼리가 비효율적
-3. **디버깅 어려움**: 특정 사용자가 왜 권한이 있거나 없는지 추적하기 어려움
-4. **일관성 부족**: 여러 서비스(API, 실시간 서버 등)에서 권한 로직이 중복되고 불일치
+## 설치 및 실행 방법
 
 ### 요구사항
 
-[references](./references) 디렉토리 아래 다양한 권한 정책 엔진을 참고하여, 다음을 만족하는 권한 시스템을 설계하고 핵심 부분을 구현하세요:
+- Java 21 이상
+- Gradle 8.0 이상 (또는 Gradle Wrapper 사용)
 
-1. **정책 기반 접근**: 권한 규칙을 독립적인 정책(Policy)으로 정의
-2. **선언적 DSL**: JSON 등 직렬화 가능한 표현식으로 권한 로직 표현
-3. **데이터/로직 분리**: 데이터 로딩과 권한 평가 로직 완전 분리
-4. **크로스 플랫폼**: 언어에 독립적으로 동작 가능한 구조
+### 1. 프로젝트 클론
 
----
-
-## Part 1: 시스템 설계
-
-### 1.1 도메인 모델 정의
-
-다음 엔티티들이 있는 시스템을 가정합니다:
-
-```typescript
-// 사용자
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
-
-// 팀
-interface Team {
-  id: string;
-  name: string;
-  plan: 'free' | 'pro' | 'enterprise';
-}
-
-// 프로젝트
-interface Project {
-  id: string;
-  name: string;
-  teamId: string;
-  visibility: 'private' | 'public';
-}
-
-// 문서
-interface Document {
-  id: string;
-  title: string;
-  projectId: string;
-  creatorId: string;
-  deletedAt: Date | null;
-  publicLinkEnabled: boolean;
-}
-
-// 팀 멤버십
-interface TeamMembership {
-  userId: string;
-  teamId: string;
-  role: 'viewer' | 'editor' | 'admin';
-}
-
-// 프로젝트 멤버십
-interface ProjectMembership {
-  userId: string;
-  projectId: string;
-  role: 'viewer' | 'editor' | 'admin';
-}
+```bash
+git clone [repository-url]
 ```
 
-### 1.2 권한 DSL 설계
+### 2. 빌드
 
-다음 요구사항을 만족하는 DSL을 설계하세요:
-
-**권한 종류**:
-- `can_view`: 문서 보기
-- `can_edit`: 문서 편집
-- `can_delete`: 문서 삭제
-- `can_share`: 문서 공유 설정 변경
-
-**정책 예시**:
-1. 삭제된 문서는 아무도 편집/삭제할 수 없음 (Deny)
-2. 문서 생성자는 모든 권한을 가짐 (Allow)
-3. 프로젝트의 editor/admin 역할을 가진 사용자는 편집 가능 (Allow)
-4. 팀의 admin 역할을 가진 사용자는 팀 내 모든 프로젝트의 문서에 대해 can_view, can_edit, can_share 권한을 가짐 (Allow)
-5. private 프로젝트의 문서는 프로젝트 멤버 또는 팀 admin만 접근 가능 (Deny for others)
-6. free 플랜 팀의 문서는 공유 설정 변경 불가 (Deny)
-7. publicLinkEnabled가 true인 문서는 누구나 볼 수 있음 (Allow)
-
-**과제**:
-
-아래 코드들은 어디까지나 예시이므로 자유롭게 설계해주세요
-
-```markdown
-1. Expression DSL의 구조를 설계하세요
-   - BinaryExpression (예: ["document.deletedAt", "<>", null])
-   - 논리 연산자 (and, or, not)
-   - 필드 참조 방식
-
-2. Policy 클래스/인터페이스 구조를 설계하세요
-   - 속성들 (effect, permissions, applyFilter 등)
-   - 위 7개 정책 예시를 실제 DSL로 표현해보세요
-
-3. 시스템 아키텍처를 다이어그램으로 그리세요
-   - 각 컴포넌트의 역할과 관계
-   - 데이터 흐름도
+```bash
+./gradlew build
 ```
 
----
+### 3. 테스트 실행
 
-## Part 2: 핵심 컴포넌트 구현 (선택)
+```bash
+# 모든 테스트 실행
+./gradlew test
 
-선호하는 언어(TypeScript, Python, Go, Java 등)를 선택하여 다음을 구현하세요. Codex, Claude Code 같은 AI 코딩 에이전트를 사용하여 구현하는 경우 그 과정을 자세하게 기록해주세요.
-
-### 2.1 Expression DSL 및 Evaluator 구현 (선택)
-
-아래 코드들은 어디까지나 예시이므로 자유롭게 설계해주세요.
-
-```typescript
-// 예시: TypeScript로 구현할 경우의 타입 정의
-
-type FieldName = string; // "document.deletedAt", "user.id" 등
-type Value = string | number | boolean | null;
-
-type BinaryExpression = [
-  FieldName,
-  '=' | '<>' | '>' | '<' | '>=' | '<=',
-  Value | { ref: FieldName }
-];
-
-type Expression =
-  | BinaryExpression
-  | { and: Expression[] }
-  | { or: Expression[] }
-  | { not: Expression };
-
-// 구현해야 할 함수
-function evaluateExpression(
-  expr: Expression,
-  data: Record<string, Record<string, Value>>
-): boolean | null {
-  // TODO: 구현
-  // - true/false: 확정적으로 평가 가능
-  // - null: 데이터 부족으로 평가 불가
-}
+# 특정 시나리오 테스트
+./gradlew test --tests Scenario1ExactTest
+./gradlew test --tests Scenario2ExactTest
+./gradlew test --tests Scenario3ExactTest
+./gradlew test --tests Scenario4ExactTest
+./gradlew test --tests Scenario5ExactTest
+./gradlew test --tests Scenario6ExactTest
 ```
 
-**구현 요구사항**:
-- `and`, `or`, `not` 연산자 처리
-- 필드 참조 (`{ ref: "field.name" }`) 처리
-- 데이터가 부족한 경우 `null` 반환
-- 타입 비교 (문자열, 숫자, boolean, null, Date)
+## 7가지 표준 정책
 
-**테스트 케이스 작성**:
-```typescript
-const testCases = [
-  {
-    name: "Simple equality",
-    expr: ["user.id", "=", "123"],
-    data: { user: { id: "123" } },
-    expected: true
-  },
-  {
-    name: "AND operation",
-    expr: {
-      and: [
-        ["document.deletedAt", "=", null],
-        ["user.role", "=", "admin"]
-      ]
-    },
-    data: {
-      document: { deletedAt: null },
-      user: { role: "admin" }
-    },
-    expected: true
-  },
-  {
-    name: "Missing data returns null",
-    expr: ["document.title", "=", "Test"],
-    data: { user: { id: "123" } }, // document 데이터 없음
-    expected: null
-  },
-  // 추가 테스트 케이스 5개 이상 작성
-];
-```
+1. 삭제된 문서 거부 - 삭제된 문서는 편집/삭제/공유 불가
+2. 문서 생성자 권한 - 생성자는 모든 권한 보유
+3. 프로젝트 편집자 권한 - Editor/Admin 역할은 편집 가능
+4. 팀 관리자 권한 - 팀 Admin은 팀 내 모든 문서 접근
+5. Private 프로젝트 제한 - 멤버만 Private 프로젝트 접근
+6. Free 플랜 공유 제한 - Free 플랜은 공유 기능 제한
+7. Public Link 허용 - 공개 링크 활성화 시 누구나 열람
 
-### 2.2 Policy 시스템 구현 (선택)
+## 개선 가능한 부분 및 제약사항
 
-```typescript
-interface Policy {
-  name: string;
-  description: string;
-  effect: 'allow' | 'deny';
-  permissions: string[];
-  applyFilter: Expression;
-  requiredData?: string[]; // 필요한 데이터 테이블 목록
-}
+### 현재 제약사항
 
-class PolicyEngine {
-  private policies: Policy[] = [];
+1. Expression 제한: 현재는 AND, OR, NOT, BINARY만 지원, 통계 함수(COUNT, SUM, AVG 등) 또는 서브쿼리 등 지원 고려 필요
+2. DataLoader 단순화: Java 메모리 기반 구현, 실제 DB 연동 및 복잡한 쿼리 미구현
 
-  addPolicy(policy: Policy): void {
-    // TODO: 구현
-  }
+### 향후 개선 방향
 
-  async hasPermission(
-    resource: any,
-    user: any,
-    permission: string
-  ): Promise<boolean> {
-    // TODO: 구현
-    // 1. permission에 해당하는 모든 정책 필터링
-    // 2. 필요한 데이터 파악
-    // 3. 데이터 로드
-    // 4. Deny 정책 평가 (하나라도 true면 거부)
-    // 5. Allow 정책 평가 (하나라도 true면 허용)
-    // 6. 기본값은 거부
-  }
-}
-```
+1. Expression 고도화: 집계, 서브쿼리, IN/EXISTS 연산자 추가
+2. DataLoader 고도화: JPA/Hibernate 연동으로 실제 DB 지원, 복잡한 쿼리 처리, 캐시 및 지연로딩 등 고려
 
-**구현 요구사항**:
-- Part 1.2에서 정의한 7개 정책을 코드로 구현
-- DENY 정책이 ALLOW보다 우선순위 높음
-- 정책 평가 순서 최적화 (가능한 빨리 결정)
-
----
-
-## Part 3: 종합 시나리오 테스트 (선택)
-
-다음 시나리오들에 대해 시스템이 올바르게 동작하는지 테스트를 작성하세요:
-
-### 시나리오 1: 일반 프로젝트 멤버
-```typescript
-const user = { id: "u1", email: "user@example.com" };
-const team = { id: "t1", plan: "pro" };
-const project = { id: "p1", teamId: "t1", visibility: "private" };
-const document = {
-  id: "d1",
-  projectId: "p1",
-  creatorId: "u2",
-  deletedAt: null,
-  publicLinkEnabled: false
-};
-const teamMembership = { userId: "u1", teamId: "t1", role: "viewer" };
-const projectMembership = { userId: "u1", projectId: "p1", role: "editor" };
-
-// 예상 결과:
-// can_view: true (프로젝트 멤버이고 private)
-// can_edit: true (editor 역할)
-// can_delete: false (생성자가 아님)
-// can_share: true (pro 플랜)
-```
-
-### 시나리오 2: 삭제된 문서
-```typescript
-const user = { id: "u1", email: "creator@example.com" };
-const team = { id: "t1", plan: "pro" };
-const project = { id: "p1", teamId: "t1", visibility: "private" };
-const document = {
-  id: "d1",
-  projectId: "p1",
-  creatorId: "u1",
-  deletedAt: new Date(),
-  publicLinkEnabled: false
-};
-const teamMembership = { userId: "u1", teamId: "t1", role: "admin" };
-const projectMembership = { userId: "u1", projectId: "p1", role: "admin" };
-
-// 예상 결과:
-// can_view: true (생성자)
-// can_edit: false (삭제됨 - DENY 정책)
-// can_delete: false (삭제됨 - DENY 정책)
-// can_share: false (삭제됨 - DENY 정책)
-```
-
-### 시나리오 3: Free 플랜 제한
-```typescript
-const user = { id: "u1", email: "user@example.com" };
-const team = { id: "t1", plan: "free" };
-const project = { id: "p1", teamId: "t1", visibility: "public" };
-const document = {
-  id: "d1",
-  projectId: "p1",
-  creatorId: "u2",
-  deletedAt: null,
-  publicLinkEnabled: false
-};
-const teamMembership = { userId: "u1", teamId: "t1", role: "viewer" };
-const projectMembership = { userId: "u1", projectId: "p1", role: "admin" };
-
-// 예상 결과:
-// can_view: true (프로젝트 멤버)
-// can_edit: true (프로젝트 admin)
-// can_delete: false (생성자가 아님)
-// can_share: false (free 플랜 - DENY 정책)
-```
-
-### 시나리오 4: 팀 Admin - Private 프로젝트 접근 가능
-```typescript
-const user = { id: "u1", email: "admin@example.com" };
-const team = { id: "t1", plan: "pro" };
-const project = { id: "p1", teamId: "t1", visibility: "private" };
-const document = {
-  id: "d1",
-  projectId: "p1",
-  creatorId: "u2",
-  deletedAt: null,
-  publicLinkEnabled: false
-};
-const teamMembership = { userId: "u1", teamId: "t1", role: "admin" };
-// projectMembership 없음 - 프로젝트에 직접 포함되지 않음
-
-// 예상 결과:
-// can_view: true (팀 admin은 팀 내 모든 private 프로젝트 접근 가능)
-// can_edit: true (팀 admin 권한으로 편집 가능)
-// can_delete: false (생성자가 아님)
-// can_share: true (pro 플랜 + 팀 admin)
-```
-
-### 시나리오 5: 팀 Editor - Private 프로젝트 접근 불가
-```typescript
-const user = { id: "u1", email: "editor@example.com" };
-const team = { id: "t1", plan: "pro" };
-const project = { id: "p1", teamId: "t1", visibility: "private" };
-const document = {
-  id: "d1",
-  projectId: "p1",
-  creatorId: "u2",
-  deletedAt: null,
-  publicLinkEnabled: false
-};
-const teamMembership = { userId: "u1", teamId: "t1", role: "editor" };
-// projectMembership 없음 - 프로젝트에 직접 포함되지 않음
-
-// 예상 결과:
-// can_view: false (팀 editor는 private 프로젝트에 명시적으로 포함되어야 함)
-// can_edit: false (접근 불가)
-// can_delete: false (접근 불가)
-// can_share: false (접근 불가)
-```
-
-### 시나리오 6: Public Link 활성화 - 누구나 볼 수 있음
-```typescript
-const user = { id: "u1", email: "guest@example.com" };
-const team = { id: "t1", plan: "pro" };
-const project = { id: "p1", teamId: "t1", visibility: "private" };
-const document = {
-  id: "d1",
-  projectId: "p1",
-  creatorId: "u2",
-  deletedAt: null,
-  publicLinkEnabled: true
-};
-// teamMembership 없음 - 팀 멤버가 아님
-// projectMembership 없음 - 프로젝트 멤버가 아님
-
-// 예상 결과:
-// can_view: true (publicLinkEnabled가 true이면 누구나 볼 수 있음)
-// can_edit: false (멤버가 아니므로 편집 불가)
-// can_delete: false (멤버가 아니므로 삭제 불가)
-// can_share: false (멤버가 아니므로 공유 설정 변경 불가)
-```
-
----
-
-## 제출 방법
-
-다음을 포함하여 제출하세요:
-
-1. **설계 문서 (필수)** (`DESIGN.md`)
-   - 시스템 아키텍처 다이어그램
-   - DSL 문법 정의
-   - 주요 설계 결정 및 트레이드오프
-
-2. **구현 코드 (선택)**
-   - 소스 코드 (적절한 디렉토리 구조)
-   - 단위 테스트
-   - 통합 테스트 (시나리오 기반)
-
-3. **README.md (선택)**
-   - 프로젝트 개요
-   - 설치 및 실행 방법
-   - 예제 사용법
-   - 개선 가능한 부분 및 제약사항
-
----
-
-## 참고 자료
-
-- [Figma 권한 DSL 사례](references/figma-permissions-dsl-ko.md)
-- [Open Policy Agent (OPA) - Rego 언어](references/opa-rego-language-ko.md)
-- [Zanzibar 인증 시스템](references/zanzibar-authorization-system-ko.md)
-- [Oso - Polar 언어](references/oso-polar-language-ko.md)
-- 주요 개념:
-  - Policy-based Access Control (PBAC)
-  - Domain Specific Language (DSL)
-  - Expression Evaluation
